@@ -20,19 +20,19 @@ options.add_argument("--start-maximized")
 options.add_argument('--disable-gpu')
 options.add_argument('--disable-dev-shm-usage')
 options.add_argument('--no-sandbox')
-options.add_argument("--log-level=OFF")
+options.add_experimental_option("excludeSwitches", ["enable-logging"])
 
 def cls():
     os.system('cls' if os.name=='nt' else 'clear')
 
-def scrapeSslProxies():
+def scrapeProxies(url):
     driver = webdriver.Chrome(options=options)
-    driver.get("https://www.sslproxies.org/")
+    driver.get(url)
 
     try: #Wait 10 seconds until the id we are looking for is found if not we close the driver
         WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "container")))
         sleep(2)
-        print("Loaded sslproxies")
+        print("Loaded Fresh Proxy List")
 
         proxies = {}
         for i in range(101):
@@ -48,7 +48,7 @@ def scrapeSslProxies():
     finally:
         driver.quit()
 
-def scrapeFreeProxycz(url):
+def scrapeProxiesLong(url):
     driver = webdriver.Chrome(options=options)
     driver.get(url)
 
@@ -80,11 +80,31 @@ def scrapeFreeProxycz(url):
     finally:
         driver.quit()
 
-def getFreeProxycz(x):
+def getProxiesLong(x):
     url = "http://free-proxy.cz/en/proxylist/main/"
     for i in range(x):
-        scrapeFreeProxycz(url + str(i))
+        scrapeProxiesLong(url + str(i))
+
+def getProxies():
+    scrapeProxies("https://free-proxy-list.net/anonymous-proxy.html")
+    sleep(2)
+    scrapeProxies("https://free-proxy-list.net/")
+    sleep(2)
+    scrapeProxies("https://www.socks-proxy.net/")
+    sleep(2)
+    scrapeProxies("https://www.sslproxies.org/")
+
+def getFileLength():
+    file = open("proxies.txt", "r")
+    nonempty_lines = [line.strip("\n") for line in file if line != "\n"]
+    line_count = len(nonempty_lines)
+    file.close()
+    return(line_count)
 
 if __name__ == "__main__":
-    scrapeSslProxies()
-    getFreeProxycz(5)
+    getProxies()
+    sleep(2)
+    getProxiesLong(5)
+
+    cls()
+    print("{} Total Proxies".format(getFileLength()))
