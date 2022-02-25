@@ -1,10 +1,11 @@
-import os
-import winsound
+import os, requests
 from time import sleep
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select
+from sqlalchemy import false, true
 
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
 options = webdriver.ChromeOptions()
@@ -25,28 +26,79 @@ options.add_experimental_option("excludeSwitches", ["enable-logging"])
 def cls():
     os.system('cls' if os.name=='nt' else 'clear')
 
-def scrapeProxies(url):
+def scrapeProxiesSpy(url):
+    urls = ["https://spys.one/en/free-proxy-list/", "https://spys.one/en/anonymous-proxy-list/", "https://spys.one/en/https-ssl-proxy/", "https://spys.one/en/socks-proxy-list/"]
     driver = webdriver.Chrome(options=options)
-    driver.get(url)
+    for url in urls:
+        driver.get(f"Loaded {url}")
+        try: #Wait 10 seconds until the id we are looking for is found if not we close the driver
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "spy1")))
+            print(f"Loaded spys.one")
+            sleep(1)
 
-    try: #Wait 10 seconds until the id we are looking for is found if not we close the driver
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "container")))
-        sleep(2)
-        print("Loaded Fresh Proxy List")
+            element = driver.find_element_by_id("xpp")
+            drp = Select(element)
+            sleep(1)
+            drp.select_by_visible_text('500')
+            #do it again cuz its wacko
+            element = driver.find_element_by_id("xpp")
+            drp = Select(element)
+            sleep(1)
+            drp.select_by_visible_text('500')
 
-        proxies = {}
-        for i in range(101):
-            if i > 0:
-                ip = driver.find_element_by_css_selector("#list > div > div.table-responsive > div > table > tbody > tr:nth-child({}) > td:nth-child(1)".format(i))
-                port = driver.find_element_by_css_selector("#list > div > div.table-responsive > div > table > tbody > tr:nth-child({}) > td:nth-child(2)".format(i))
-                proxies[ip.text]=port.text
+            print("Set Page Hight")
+            sleep(8)
 
-        f = open("proxies.txt","a")
-        for key, value in proxies.items():
-            f.write("{}:{}\n".format(key, value))
+            proxies = {}
+            all_proxies = driver.find_elements_by_class_name("spy14")
+            for proxy in all_proxies:
+                with open("proxies.txt", "a") as f:
+                    if (not any(c.isalpha() for c in proxy.text)):
+                        if proxy.text != "+":
+                            f.write(f"{proxy.text}\n")
+        finally:
+            sleep(1)
+            driver.quit()
 
-    finally:
-        driver.quit()
+def downloadProxies():
+    urls = {"https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all": "http_proxies.txt", 
+    "https://api.proxyscrape.com/v2/?request=getproxies&protocol=socks4&timeout=10000&country=all" : "socks4_proxies.txt",
+    "https://api.proxyscrape.com/v2/?request=getproxies&protocol=socks5&timeout=10000&country=all" : "socks5_proxies.txt"}
+
+    for url, file in urls.items():
+        print(f"Loaded {url}")
+        r = requests.get(url, allow_redirects=True)
+        open(file, 'wb').write(r.content)
+        with open(file) as temp:
+            with open("proxies.txt", "a") as f:
+                for line in temp:
+                    f.write(line)
+        print(f"{file} coppied")
+        os.remove(file)
+        print(f"{file} cleaned")
+        sleep(1)
+
+def scrapeProxiesFree(url):
+    urls = ["https://free-proxy-list.net/anonymous-proxy.html", "https://free-proxy-list.net/", "https://www.socks-proxy.net/", "https://www.sslproxies.org/"]
+    driver = webdriver.Chrome(options=options)
+    for url in urls:
+        driver.get(url)
+        try: #Wait 10 seconds until the id we are looking for is found if not we close the driver
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "container")))
+            sleep(2)
+            print(f"Loaded {url}")
+            proxies = {}
+            for i in range(101):
+                if i > 0:
+                    ip = driver.find_element_by_css_selector(f"#list > div > div.table-responsive > div > table > tbody > tr:nth-child({i}) > td:nth-child(1)")
+                    port = driver.find_element_by_css_selector(f"#list > div > div.table-responsive > div > table > tbody > tr:nth-child({i}) > td:nth-child(2)")
+                    proxies[ip.text]=port.text
+            for ip, port in proxies.items():
+                with open("proxies.txt", "a") as f:
+                    f.write(f"{ip}:{port}\n")
+        finally:
+            sleep(1)
+            driver.quit()
 
 def scrapeProxiesLong(url):
     driver = webdriver.Chrome(options=options)
@@ -54,11 +106,11 @@ def scrapeProxiesLong(url):
 
     try: #Wait 10 seconds until the id we are looking for is found if not we close the driver
         main = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "clickexport")))
-        print("Loaded Fresh Proxy List")
+        print(f"Loaded {url}")
 
         ips = []
-        all_left = driver.find_elements_by_class_name("left")
-        for span in all_left:
+        all_proxies = driver.find_elements_by_class_name("left")
+        for span in all_proxies:
             if (not any(c.isalpha() for c in span.text)):
                 ips.append(span.text)
 
@@ -72,12 +124,12 @@ def scrapeProxiesLong(url):
         
         for i in range(len(all_fport)):
             proxies[ips[i]]=ports[i]
-        
-        f = open("proxies.txt","a")
-        for key, value in proxies.items():
-            f.write("{}:{}\n".format(key, value))
 
+        for ip, port in proxies.items():
+            with open("proxies.txt", "a") as f:
+                f.write(f"{ip}:{port}\n")
     finally:
+        sleep(1)
         driver.quit()
 
 def getProxiesLong(x):
@@ -86,13 +138,11 @@ def getProxiesLong(x):
         scrapeProxiesLong(url + str(i))
 
 def getProxies():
-    scrapeProxies("https://free-proxy-list.net/anonymous-proxy.html")
-    sleep(2)
-    scrapeProxies("https://free-proxy-list.net/")
-    sleep(2)
-    scrapeProxies("https://www.socks-proxy.net/")
-    sleep(2)
-    scrapeProxies("https://www.sslproxies.org/")
+    scrapeProxiesSpy()
+    scrapeProxiesFree()
+    getProxiesLong(5)
+    downloadProxies()
+
 
 def getFileLength():
     file = open("proxies.txt", "r")
@@ -103,8 +153,4 @@ def getFileLength():
 
 if __name__ == "__main__":
     getProxies()
-    sleep(2)
-    getProxiesLong(5)
-
-    cls()
-    print("{} Total Proxies".format(getFileLength()))
+    print(f"{getFileLength()} Total Proxies")
