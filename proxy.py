@@ -9,7 +9,7 @@ from sqlalchemy import false, true
 
 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.83 Safari/537.36"
 options = webdriver.ChromeOptions()
-options.headless = True
+#options.headless = True
 options.add_argument(f'user-agent={user_agent}')
 options.add_argument("--window-size=1920,1080")
 options.add_argument('--ignore-certificate-errors')
@@ -23,43 +23,41 @@ options.add_argument('--disable-dev-shm-usage')
 options.add_argument('--no-sandbox')
 options.add_experimental_option("excludeSwitches", ["enable-logging"])
 
+driver = webdriver.Chrome(options=options)
+
 def cls():
     os.system('cls' if os.name=='nt' else 'clear')
 
 def scrapeProxiesSpy():
-    urls = ["https://spys.one/en/free-proxy-list/", "https://spys.one/en/anonymous-proxy-list/", "https://spys.one/en/https-ssl-proxy/", "https://spys.one/en/socks-proxy-list/"]
-    driver = webdriver.Chrome(options=options)
+    urls = ["https://spys.one/en/socks-proxy-list/", "https://spys.one/en/https-ssl-proxy/", "https://spys.one/en/anonymous-proxy-list/", "https://spys.one/en/free-proxy-list/"]
     for url in urls:
-        print(f"Loaded {url}")
         driver.get(url)
         try: #Wait 10 seconds until the id we are looking for is found if not we close the driver
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "spy1")))
-            print(f"Loaded spys.one")
-            sleep(1)
+            print(f"Loaded {url}")
+            sleep(3)
 
-            element = driver.find_element_by_id("xpp")
-            drp = Select(element)
-            sleep(1)
-            drp.select_by_visible_text('500')
-            #do it again cuz its wacko
-            element = driver.find_element_by_id("xpp")
-            drp = Select(element)
-            sleep(1)
-            drp.select_by_visible_text('500')
+            # element = driver.find_element(By.ID, 'xpp')
+            # drp = Select(element)
+            # sleep(1)
+            # drp.select_by_visible_text('500')
 
-            print("Set Page Hight")
-            sleep(8)
+            # print("Set Page Hight")
+            # sleep(10)
 
             proxies = {}
-            all_proxies = driver.find_elements_by_class_name("spy14")
+            all_proxies = driver.find_elements(By.CLASS_NAME,"spy14")
             for proxy in all_proxies:
                 with open("proxies.txt", "a") as f:
                     if (not any(c.isalpha() for c in proxy.text)):
                         if proxy.text != "+":
                             f.write(f"{proxy.text}\n")
+            print(f"Saved {len(all_proxies)} Proxies")
         finally:
+            print("Quitting Driver")
             sleep(1)
-            driver.quit()
+            driver.close()
+            sleep(3)
 
 def downloadProxies():
     urls = {"https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all": "http_proxies.txt", 
@@ -80,8 +78,8 @@ def downloadProxies():
         sleep(1)
 
 def scrapeProxiesFree():
-    urls = ["https://free-proxy-list.net/anonymous-proxy.html", "https://free-proxy-list.net/", "https://www.socks-proxy.net/", "https://www.sslproxies.org/"]
-    driver = webdriver.Chrome(options=options)
+    urls = [ "https://www.sslproxies.org/", "https://free-proxy-list.net/anonymous-proxy.html", "https://www.socks-proxy.net/",  "https://free-proxy-list.net/"]
+    print("Starting New Driver")
     for url in urls:
         driver.get(url)
         try: #Wait 10 seconds until the id we are looking for is found if not we close the driver
@@ -91,18 +89,20 @@ def scrapeProxiesFree():
             proxies = {}
             for i in range(101):
                 if i > 0:
-                    ip = driver.find_element_by_css_selector(f"#list > div > div.table-responsive > div > table > tbody > tr:nth-child({i}) > td:nth-child(1)")
-                    port = driver.find_element_by_css_selector(f"#list > div > div.table-responsive > div > table > tbody > tr:nth-child({i}) > td:nth-child(2)")
+                    ip = driver.find_element(By.CSS_SELECTOR,f"#list > div > div.table-responsive > div > table > tbody > tr:nth-child({i}) > td:nth-child(1)")
+                    port = driver.find_element(By.CSS_SELECTOR,f"#list > div > div.table-responsive > div > table > tbody > tr:nth-child({i}) > td:nth-child(2)")
                     proxies[ip.text]=port.text
             for ip, port in proxies.items():
                 with open("proxies.txt", "a") as f:
                     f.write(f"{ip}:{port}\n")
+            print(f"Saved {len(proxies.items())} Proxies")
         finally:
+            print("Quitting Driver")
             sleep(1)
-            driver.quit()
+            driver.close()
+            sleep(1)
 
 def scrapeProxiesLong(url):
-    driver = webdriver.Chrome(options=options)
     driver.get(url)
 
     try: #Wait 10 seconds until the id we are looking for is found if not we close the driver
@@ -131,7 +131,8 @@ def scrapeProxiesLong(url):
                 f.write(f"{ip}:{port}\n")
     finally:
         sleep(1)
-        driver.quit()
+        driver.close()
+        sleep(1)
 
 def getProxiesLong(x):
     url = "http://free-proxy.cz/en/proxylist/main/"
@@ -140,9 +141,10 @@ def getProxiesLong(x):
 
 def getProxies():
     #scrapeProxiesSpy()
-    #scrapeProxiesFree()
-    getProxiesLong(5)
-    downloadProxies()
+    scrapeProxiesFree()
+    #getProxiesLong(10)
+    #downloadProxies()
+    driver.quit()
 
 
 def getFileLength():
