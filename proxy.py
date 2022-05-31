@@ -26,11 +26,12 @@ options.add_experimental_option("excludeSwitches", ["enable-logging"])
 def cls():
     os.system('cls' if os.name=='nt' else 'clear')
 
-def scrapeProxiesSpy(url):
+def scrapeProxiesSpy():
     urls = ["https://spys.one/en/free-proxy-list/", "https://spys.one/en/anonymous-proxy-list/", "https://spys.one/en/https-ssl-proxy/", "https://spys.one/en/socks-proxy-list/"]
     driver = webdriver.Chrome(options=options)
     for url in urls:
-        driver.get(f"Loaded {url}")
+        print(f"Loaded {url}")
+        driver.get(url)
         try: #Wait 10 seconds until the id we are looking for is found if not we close the driver
             WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "spy1")))
             print(f"Loaded spys.one")
@@ -78,7 +79,7 @@ def downloadProxies():
         print(f"{file} cleaned")
         sleep(1)
 
-def scrapeProxiesFree(url):
+def scrapeProxiesFree():
     urls = ["https://free-proxy-list.net/anonymous-proxy.html", "https://free-proxy-list.net/", "https://www.socks-proxy.net/", "https://www.sslproxies.org/"]
     driver = webdriver.Chrome(options=options)
     for url in urls:
@@ -138,8 +139,8 @@ def getProxiesLong(x):
         scrapeProxiesLong(url + str(i))
 
 def getProxies():
-    scrapeProxiesSpy()
-    scrapeProxiesFree()
+    #scrapeProxiesSpy()
+    #scrapeProxiesFree()
     getProxiesLong(5)
     downloadProxies()
 
